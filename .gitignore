@@ -1,0 +1,25 @@
+# Buildozer / Android
+.buildozer/
+bin/
+build/
+dist/
+*.apk
+*.aab
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# IDE
+.vscode/
+
+# User data (never commit)
+user_accounts.json
+saves/
+cache/
+
+# Windows
+Thumbs.db
+Desktop.ini
