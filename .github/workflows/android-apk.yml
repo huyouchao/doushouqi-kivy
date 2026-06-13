@@ -16,39 +16,80 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   build-apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Ubuntu 22.04 有完整的 Android 构建支持
 
     steps:
+      # ===== 1. 拉取代码 =====
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 使用社区维护的 buildozer action（kivy官方action不存在）
-      # 参考: https://github.com/digreatbrian/buildozer-action
-      - name: Build APK with Buildozer
-        uses: digreatbrian/buildozer-action@v2
+      # ===== 2. 安装 Python =====
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          buildozer-cmd: buildozer -v android debug
+          cache: 'pip'
 
-      # 上传产物
+      # ===== 3. 安装 Java 17 (Android Gradle 需要) =====
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # ===== 4. 安装系统依赖 (针对 Ubuntu 22.04) =====
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip \
+            autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev \
+            libtinfo5 cmake libffi-dev libssl-dev \
+            lld \
+            python3-pip
+
+      # ===== 5. 安装构建工具 =====
+      - name: Install build tools
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install Cython==0.29.40 buildozer==1.6.0
+
+      # ===== 6. 预接受 Android SDK 许可证 (关键步骤!) =====
+      - name: Accept Android SDK licenses
+        run: |
+          mkdir -p "$HOME/android-sdk/licenses"
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$HOME/android-sdk/licenses/android-sdk-license"
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" >> "$HOME/android-sdk/licenses/android-sdk-license"
+          echo "d975f751698a77b662f1254ddbeed3901e976f5a" > "$HOME/android-sdk/licenses/android-sdk-preview-license"
+
+      # ===== 7. 执行 Buildozer 构建 =====
+      - name: Build APK with Buildozer
+        env:
+          ANDROID_SDK_ROOT: ${{ env.HOME }}/android-sdk
+        run: |
+          buildozer -v android debug 2>&1 | tee buildozer_output.log
+
+      # ===== 8. 上传 APK 产物 =====
       - name: Upload APK Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: doushouqi-debug-apk
           path: bin/*.apk
           if-no-files-found: warn
+          retention-days: 30
 
-      # 构建失败时也上传日志以便排查
-      - name: Upload build logs on failure
+      # ===== 9. 失败时上传完整日志 =====
+      - name: Upload full build logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: build-logs
+          name: build-failure-logs
           path: |
             .buildozer/
-            *.log
+            buildozer_output.log
           if-no-files-found: ignore
