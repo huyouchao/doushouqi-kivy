@@ -3,6 +3,8 @@ name: Android APK
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - "main.py"
       - "core/**"
@@ -12,85 +14,30 @@ on:
       - "buildozer.spec"
       - ".github/workflows/android-apk.yml"
 
+permissions:
+  contents: write
+  actions: write
+
 jobs:
   build-apk:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      # Kivy 官方 Action，内部用预配置好的 Docker 镜像运行 buildozer
+      # 镜像已包含 Android SDK / NDK / Java / Gradle，无需手动安装
+      - name: Build APK (official kivy/buildozer-action)
+        uses: kivy/buildozer-action@master
         with:
-          python-version: "3.12"
+          command: buildozer -v android debug
+          repository_root: .
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk-headless python3-pip \
-            autoconf libtool pkg-config zlib1g-dev \
-            libncurses5-dev libncursesw5-dev libtinfo5 cmake \
-            libffi-dev libssl-dev automake \
-            wget ccache
-
-      - name: Install Python packages
-        run: |
-          pip install --upgrade pip setuptools wheel
-          pip install buildozer==1.6.0.post0 cython==3.0.11
-
-      - name: Set up Android SDK + NDK
-        run: |
-          # --- Set up the SDK directory where buildozer expects it ---
-          SDK_DIR="$HOME/.buildozer/android/platform/android-sdk"
-          mkdir -p "$SDK_DIR"
-
-          # --- Download & install command-line tools ---
-          mkdir -p /tmp/sdk-install
-          cd /tmp/sdk-install
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux_11076708_latest.zip -O cmdline-tools.zip
-          unzip -q cmdline-tools.zip
-          mkdir -p "$SDK_DIR/cmdline-tools/latest"
-          mv cmdline-tools/* "$SDK_DIR/cmdline-tools/latest/" || true
-
-          # --- Create legacy tools/bin symlink so buildozer finds sdkmanager ---
-          mkdir -p "$SDK_DIR/tools/bin"
-          ln -sf "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$SDK_DIR/tools/bin/sdkmanager" || true
-          ln -sf "$SDK_DIR/cmdline-tools/latest/bin/apksigner" "$SDK_DIR/tools/bin/apksigner" || true
-
-          # --- Export ANDROID_HOME ---
-          echo "ANDROID_HOME=$SDK_DIR" >> $GITHUB_ENV
-          export ANDROID_HOME="$SDK_DIR"
-
-          # --- Accept all licenses ---
-          yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --licenses --sdk_root="$SDK_DIR" >/dev/null 2>&1 || true
-
-          # --- Install required platform and build-tools ---
-          "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_DIR" \
-            "platforms;android-33" "build-tools;33.0.2" >/dev/null 2>&1 || true
-
-          echo "Android SDK ready at $SDK_DIR"
-          ls "$SDK_DIR/platforms/" 2>/dev/null || echo "(no platforms yet)"
-          ls "$SDK_DIR/build-tools/" 2>/dev/null || echo "(no build-tools yet)"
-          "$SDK_DIR/tools/bin/sdkmanager" --version 2>/dev/null || echo "(sdkmanager link check)"
-
-      - name: Build debug APK
-        run: |
-          export ANDROID_HOME="$HOME/.buildozer/android/platform/android-sdk"
-          buildozer android debug 2>&1
-
-      - name: Upload Android artifacts
+      # 上传产物（APK 文件）
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-build-artifacts
-          path: |
-            bin/*.apk
-            bin/*.aab
+          name: doushouqi-debug-apk
+          path: bin/*.apk
           if-no-files-found: warn
