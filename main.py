@@ -27,6 +27,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.spinner import Spinner, SpinnerOption
 from kivy.uix.textinput import TextInput
 from kivy.uix.modalview import ModalView
+from kivy.uix.widget import Widget
 
 from ai_player import AIPlayer, DIFFICULTY_PROFILES
 from auth_logic import AccountStore, MASTER_PASSWORD
@@ -48,6 +49,7 @@ from platform_services.device import get_viewport_metrics, scaled, use_horizonta
 from platform_services.resources import get_desktop_icon_path
 from platform_services.runtime import (
     apply_desktop_window_setup,
+    center_window,
     configure_soft_input_mode,
     enable_high_dpi,
     is_android,
@@ -66,6 +68,7 @@ DRAW_REASON_TEXT = {
     "manual_end": "手动结束战斗",
 }
 DEFAULT_WINDOW_SIZE = (1280, 860)
+LOGIN_WINDOW_SIZE = (920, 700)
 MIN_WINDOW_SIZE = (980, 760)
 TOP_BAR_HEIGHT = 48
 
@@ -125,10 +128,10 @@ def _enable_wrap(label, halign='center', valign='middle'):
 def _section_title(text):
     return _mk_label(
         text,
-        font_size='14sp',
+        font_size='13sp',
         color=(0.77, 0.83, 0.90, 1),
         size_hint_y=None,
-        height=24,
+        height=28,
     )
 
 
@@ -650,33 +653,38 @@ class GameScreen(Screen):
             bar_width=10,
             scroll_type=['bars', 'content'],
         )
+        self.side_panel = BoxLayout(
+            orientation='vertical',
+            spacing=8,
+            size_hint=(1, 1),
+        )
         self.panel_content = BoxLayout(
             orientation='vertical',
-            spacing=10,
+            spacing=8,
             padding=[0, 0, 0, 0],
             size_hint=(1, None),
         )
         self.panel_content.bind(minimum_height=self.panel_content.setter('height'))
         self.panel_scroll.add_widget(self.panel_content)
 
-        self.turn_block = BoxLayout(orientation='vertical', size_hint_y=None, height=108, padding=[16, 14, 16, 14], spacing=8)
+        self.turn_block = BoxLayout(orientation='vertical', size_hint_y=None, height=96, padding=[14, 12, 14, 12], spacing=6)
         _style_block(self.turn_block)
-        self.turn_label = _mk_label('红方回合', font_size='20sp', color=hex_to_rgb(COLORS['red_piece']), size_hint_y=None, height=32)
-        self.status_label = _enable_wrap(_mk_label('请点击红方棋子', font_size='13sp', color=hex_to_rgb(COLORS['board_line']), size_hint_y=None, height=44), halign='center')
+        self.turn_label = _mk_label('红方回合', font_size='18sp', color=hex_to_rgb(COLORS['red_piece']), size_hint_y=None, height=28)
+        self.status_label = _enable_wrap(_mk_label('请点击红方棋子', font_size='12sp', color=hex_to_rgb(COLORS['board_line']), size_hint_y=None, height=36), halign='center')
         self.turn_block.add_widget(self.turn_label)
         self.turn_block.add_widget(self.status_label)
 
-        self.info_block = BoxLayout(orientation='vertical', size_hint_y=None, height=286, padding=[16, 16, 16, 16], spacing=12)
+        self.info_block = BoxLayout(orientation='vertical', size_hint_y=None, height=270, padding=[14, 14, 14, 14], spacing=10)
         _style_block(self.info_block)
         self.info_block.add_widget(_section_title('对局信息'))
-        self.info_list = GridLayout(cols=1, size_hint_y=None, height=210, spacing=8)
+        self.info_list = GridLayout(cols=1, size_hint_y=None, height=196, spacing=6)
 
-        self.user_value_label = self._make_info_line('当前用户：', height=28)
-        self.step_label = self._make_info_line('当前步数：', height=28)
-        self.player_time_label = self._make_info_line('', color=hex_to_rgb(COLORS['red_piece']), height=28)
-        self.opponent_time_label = self._make_info_line('', color=hex_to_rgb(COLORS['blue_piece']), height=28)
-        self.local_score_label = self._make_info_line('本局分数：', color=(0.98, 0.93, 0.60, 1), height=42)
-        self.total_score_label = self._make_info_line('累计积分：', color=hex_to_rgb('#FFD700'), height=28)
+        self.user_value_label = self._make_info_line('当前用户：', height=24)
+        self.step_label = self._make_info_line('当前步数：', height=24)
+        self.player_time_label = self._make_info_line('', color=hex_to_rgb(COLORS['red_piece']), height=24)
+        self.opponent_time_label = self._make_info_line('', color=hex_to_rgb(COLORS['blue_piece']), height=24)
+        self.local_score_label = self._make_info_line('本局分数：', color=(0.98, 0.93, 0.60, 1), height=36)
+        self.total_score_label = self._make_info_line('累计积分：', color=hex_to_rgb('#FFD700'), height=24)
 
         for widget in [
             self.user_value_label,
@@ -689,30 +697,32 @@ class GameScreen(Screen):
             self.info_list.add_widget(widget)
         self.info_block.add_widget(self.info_list)
 
-        self.settings_block = BoxLayout(orientation='vertical', size_hint_y=None, height=144, padding=[16, 16, 16, 16], spacing=12)
+        self.settings_block = BoxLayout(orientation='vertical', size_hint_y=None, height=144, padding=[14, 20, 14, 14], spacing=10)
         _style_block(self.settings_block)
         self.settings_block.add_widget(_section_title('对局设置'))
 
-        mode_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=38, spacing=8)
-        mode_row.add_widget(_mk_label('模式:', font_size='13sp', color=(0.74, 0.82, 0.92, 1), size_hint_x=0.24))
+        mode_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=34, spacing=8)
+        self.mode_label = _mk_label('模式:', font_size='13sp', color=(0.74, 0.82, 0.92, 1), size_hint_x=0.18)
+        mode_row.add_widget(self.mode_label)
         self.mode_spinner = _mk_spinner(
             '人机对战',
             ['人机对战', '双人对战'],
             font_size='13sp',
-            size_hint_x=0.76,
+            size_hint_x=0.82,
             background_color=(0.30, 0.35, 0.50, 1),
             color=(1, 1, 1, 1),
         )
         self.mode_spinner.bind(text=self._on_mode_change)
         mode_row.add_widget(self.mode_spinner)
 
-        diff_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=38, spacing=8)
-        diff_row.add_widget(_mk_label('难度:', font_size='13sp', color=(0.74, 0.82, 0.92, 1), size_hint_x=0.24))
+        diff_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=34, spacing=8)
+        self.diff_label = _mk_label('难度:', font_size='13sp', color=(0.74, 0.82, 0.92, 1), size_hint_x=0.18)
+        diff_row.add_widget(self.diff_label)
         self.difficulty_spinner = _mk_spinner(
             DIFFICULTY_PROFILES['5']['label'],
             [DIFFICULTY_PROFILES[key]['label'] for key in DIFFICULTY_PROFILES],
             font_size='13sp',
-            size_hint_x=0.76,
+            size_hint_x=0.82,
             background_color=hex_to_rgb(COLORS['den_blue']),
             color=(1, 1, 1, 1),
         )
@@ -721,10 +731,12 @@ class GameScreen(Screen):
         self.settings_block.add_widget(mode_row)
         self.settings_block.add_widget(diff_row)
 
-        self.actions_block = BoxLayout(orientation='vertical', size_hint_y=None, height=104, padding=[16, 14, 16, 14], spacing=8)
+        self.actions_block = BoxLayout(orientation='vertical', size_hint_y=None, height=114, padding=[14, 16, 14, 12], spacing=6)
         _style_block(self.actions_block)
         self.actions_block.add_widget(_section_title('常用操作'))
-        self.action_grid = GridLayout(cols=3, size_hint_y=None, height=44, spacing=[8, 8])
+        self.action_box = BoxLayout(orientation='vertical', size_hint_y=None, height=72, spacing=6)
+        self.action_row_top = GridLayout(cols=2, size_hint_y=None, height=32, spacing=[8, 8])
+        self.action_row_bottom = BoxLayout(orientation='horizontal', size_hint_y=None, height=32, spacing=8)
 
         self.sound_btn = _mk_button('音效:开', font_size='13sp', background_color=(0.22, 0.62, 0.24, 1), color=(1, 1, 1, 1))
         self.sound_btn.bind(on_press=self._on_toggle_sound)
@@ -737,17 +749,24 @@ class GameScreen(Screen):
         for text, callback, bg_color in action_defs[:2]:
             btn = _mk_button(text, font_size='13sp', background_color=bg_color, color=(1, 1, 1, 1))
             btn.bind(on_press=callback)
-            self.action_grid.add_widget(btn)
-        self.action_grid.add_widget(self.sound_btn)
-        self.actions_block.add_widget(self.action_grid)
+            self.action_row_top.add_widget(btn)
+        self.action_row_bottom.add_widget(Widget(size_hint_x=0.16))
+        self.sound_btn.size_hint_x = 0.68
+        self.action_row_bottom.add_widget(self.sound_btn)
+        self.action_row_bottom.add_widget(Widget(size_hint_x=0.16))
+        self.action_box.add_widget(self.action_row_top)
+        self.action_box.add_widget(self.action_row_bottom)
+        self.actions_block.add_widget(self.action_box)
 
         self.panel_content.add_widget(self.turn_block)
         self.panel_content.add_widget(self.info_block)
         self.panel_content.add_widget(self.settings_block)
-        self.panel_content.add_widget(self.actions_block)
+
+        self.side_panel.add_widget(self.panel_scroll)
+        self.side_panel.add_widget(self.actions_block)
 
         self.body.add_widget(self.board_shell)
-        self.body.add_widget(self.panel_scroll)
+        self.body.add_widget(self.side_panel)
 
         root.add_widget(self.top_bar)
         root.add_widget(self.body)
@@ -757,8 +776,8 @@ class GameScreen(Screen):
         self.board_shell.bind(size=lambda *_: self._update_board_scale())
 
     def _make_info_line(self, prefix, color=(1, 1, 1, 1), height=26):
-        label = _enable_wrap(_mk_label(prefix, font_size='13sp', color=color, size_hint_y=None, height=height), halign='left')
-        label.padding = (12, 0)
+        label = _enable_wrap(_mk_label(prefix, font_size='11sp', color=color, size_hint_y=None, height=height), halign='left')
+        label.padding = (6, 0)
         _style_block(label, bg_color=(0.10, 0.15, 0.22, 1.0), border_color=(0.22, 0.30, 0.40, 1))
         return label
 
@@ -767,54 +786,93 @@ class GameScreen(Screen):
         body_width = max(1, self.width - scaled(24, metrics, min_value=16))
         body_height = max(1, self.height - scaled(TOP_BAR_HEIGHT + 36, metrics, min_value=72))
         use_horizontal = use_horizontal_game_layout((body_width, body_height))
+        is_portrait = not metrics.is_landscape
+        is_compact_portrait = is_portrait and metrics.breakpoint == 'compact'
 
-        outer_gap = scaled(12, metrics, min_value=8, max_value=20)
+        outer_gap = scaled(10, metrics, min_value=6, max_value=18)
         self.root_layout.padding = outer_gap
         self.root_layout.spacing = outer_gap
         self.body.spacing = outer_gap
+        self.side_panel.spacing = block_spacing = scaled(5, metrics, min_value=3, max_value=8)
         self.top_bar.height = scaled(TOP_BAR_HEIGHT, metrics, min_value=44, max_value=64)
         self.top_bar.spacing = scaled(10, metrics, min_value=8, max_value=16)
-        self.board_shell.padding = scaled(10, metrics, min_value=8, max_value=18)
+        self.board_shell.padding = scaled(8 if use_horizontal else 10, metrics, min_value=6, max_value=16)
+        self.top_user_label.size_hint_x = 0.50 if use_horizontal else 0.44
+        self.menu_btn.size_hint_x = 0.22 if use_horizontal else 0.24
 
-        block_padding_x = scaled(16, metrics, min_value=12, max_value=24)
-        block_padding_y = scaled(14, metrics, min_value=10, max_value=20)
-        block_spacing = scaled(8, metrics, min_value=6, max_value=12)
-        self.turn_block.height = scaled(108, metrics, min_value=96, max_value=150)
+        block_padding_x = scaled(12, metrics, min_value=8, max_value=18)
+        block_padding_y = scaled(10, metrics, min_value=6, max_value=14)
+        self.turn_block.height = scaled(90 if is_portrait else 96, metrics, min_value=82, max_value=136)
         self.turn_block.padding = [block_padding_x, block_padding_y, block_padding_x, block_padding_y]
         self.turn_block.spacing = block_spacing
-        self.info_block.height = scaled(286, metrics, min_value=270, max_value=380)
+        self.info_block.height = scaled(258 if is_portrait else 248, metrics, min_value=238, max_value=340)
         self.info_block.padding = [block_padding_x, block_padding_x, block_padding_x, block_padding_x]
-        self.info_block.spacing = scaled(12, metrics, min_value=8, max_value=16)
+        self.info_block.spacing = scaled(8, metrics, min_value=4, max_value=12)
         self.info_list.spacing = block_spacing
-        self.info_list.height = self.info_block.height - scaled(76, metrics, min_value=68, max_value=92)
-        self.settings_block.height = scaled(144, metrics, min_value=134, max_value=190)
+        self.info_list.height = self.info_block.height - scaled(56, metrics, min_value=48, max_value=72)
+        self.settings_block.height = scaled(132 if is_portrait else 134, metrics, min_value=122, max_value=172)
         self.settings_block.padding = [block_padding_x, block_padding_x, block_padding_x, block_padding_x]
-        self.settings_block.spacing = scaled(12, metrics, min_value=8, max_value=16)
-        self.actions_block.height = scaled(104, metrics, min_value=92, max_value=136)
+        self.settings_block.spacing = scaled(8, metrics, min_value=4, max_value=12)
+        self.actions_block.height = scaled(108 if is_portrait else 110, metrics, min_value=98, max_value=132)
         self.actions_block.padding = [block_padding_x, block_padding_y, block_padding_x, block_padding_y]
         self.actions_block.spacing = block_spacing
-        self.action_grid.height = scaled(44, metrics, min_value=40, max_value=56)
-        self.action_grid.spacing = [scaled(8, metrics, min_value=6, max_value=12), scaled(8, metrics, min_value=6, max_value=12)]
+        self.action_box.height = scaled(64, metrics, min_value=58, max_value=82)
+        self.action_row_top.height = scaled(28, metrics, min_value=26, max_value=36)
+        self.action_row_bottom.height = scaled(28, metrics, min_value=26, max_value=36)
+        row_gap = scaled(5, metrics, min_value=3, max_value=8)
+        self.action_box.spacing = row_gap
+        self.action_row_top.spacing = [row_gap, row_gap]
+        self.action_row_bottom.spacing = row_gap
+        label_ratio = 0.16 if use_horizontal else 0.15
+        spinner_ratio = 1.0 - label_ratio
+        self.mode_label.size_hint_x = label_ratio
+        self.diff_label.size_hint_x = label_ratio
+        self.mode_spinner.size_hint_x = spinner_ratio
+        self.difficulty_spinner.size_hint_x = spinner_ratio
 
         if use_horizontal:
             self.body.orientation = 'horizontal'
-            self.board_shell.size_hint = (0.74, 1)
-            self.panel_scroll.size_hint = (0.26, 1)
-            self.panel_scroll.height = body_height
+            self.board_shell.size_hint = (0.78, 1)
+            self.side_panel.size_hint = (0.22, 1)
+            self.panel_scroll.size_hint = (1, 1)
+            self.actions_block.size_hint_y = None
+            self.panel_scroll.height = max(120, body_height - self.actions_block.height - self.side_panel.spacing)
         else:
             self.body.orientation = 'vertical'
-            self.board_shell.size_hint = (1, 0.58)
-            self.panel_scroll.size_hint = (1, 0.42)
-            self.panel_scroll.height = body_height * 0.42
+            self.side_panel.size_hint = (1, 1)
+            self.actions_block.size_hint_y = None
+            if is_compact_portrait:
+                self.board_shell.size_hint = (1, 0.66)
+                self.side_panel.size_hint = (1, 0.34)
+                self.panel_scroll.size_hint = (1, 1)
+                self.panel_scroll.height = max(96, body_height * 0.34 - self.actions_block.height - self.side_panel.spacing)
+            elif is_portrait:
+                self.board_shell.size_hint = (1, 0.68)
+                self.side_panel.size_hint = (1, 0.32)
+                self.panel_scroll.size_hint = (1, 1)
+                self.panel_scroll.height = max(96, body_height * 0.32 - self.actions_block.height - self.side_panel.spacing)
+            else:
+                self.board_shell.size_hint = (1, 0.64)
+                self.side_panel.size_hint = (1, 0.36)
+                self.panel_scroll.size_hint = (1, 1)
+                self.panel_scroll.height = max(110, body_height * 0.36 - self.actions_block.height - self.side_panel.spacing)
 
         self._update_board_scale()
 
     def _update_board_scale(self):
-        available_w = max(320, self.board_shell.width - 28)
-        available_h = max(320, self.board_shell.height - 28)
+        metrics = get_viewport_metrics((self.width, self.height))
+        available_w = max(320, self.board_shell.width - scaled(28, metrics, min_value=20, max_value=34))
+        available_h = max(320, self.board_shell.height - scaled(28, metrics, min_value=20, max_value=34))
         cell_by_w = available_w / BOARD_COLS
         cell_by_h = available_h / BOARD_ROWS
-        new_size = max(38, min(96, int(min(cell_by_w, cell_by_h))))
+        if metrics.is_landscape and metrics.is_tablet_like:
+            max_cell = 96
+        elif metrics.is_landscape:
+            max_cell = 88
+        else:
+            max_cell = 82 if metrics.breakpoint == 'compact' else 86
+        min_cell = 34 if metrics.breakpoint == 'compact' else 38
+        new_size = max(min_cell, min(max_cell, int(min(cell_by_w, cell_by_h))))
         self.board.cell_size = new_size
         self.board.board_margin = max(12, int(new_size * 0.22))
 
@@ -892,7 +950,7 @@ class GameScreen(Screen):
             "QQ：35037857\n"
             "E-mail：35037857@qq.com\n"
             "huyouchao2000@163.com\n"
-            "更新日期：2026年6月12日[/color]"
+            "更新日期：2026年6月13日[/color]"
         )
 
         root = BoxLayout(orientation='vertical', spacing=10, padding=12)
@@ -1245,6 +1303,7 @@ class GameScreen(Screen):
             self._stop_timer()
             self.ai_pending = False
             self.manager.current = 'login'
+            apply_desktop_window_setup(LOGIN_WINDOW_SIZE)
             login_screen = self.manager.get_screen('login')
             login_screen.refresh_usernames()
             login_screen.select_username(self.username)
@@ -1654,9 +1713,10 @@ class JungleChessApp(App):
 
     def build(self):
         Window.clearcolor = (0.10, 0.14, 0.20, 1)
-        apply_desktop_window_setup(get_default_window_size())
+        apply_desktop_window_setup(LOGIN_WINDOW_SIZE)
         configure_soft_input_mode()
         Window.bind(on_keyboard=self._on_window_keyboard)
+        Window.bind(size=self._on_window_size_changed)
 
         icon_path = get_desktop_icon_path()
         if icon_path and os.path.exists(icon_path):
@@ -1735,6 +1795,15 @@ class JungleChessApp(App):
 
     def on_stop(self):
         Window.unbind(on_keyboard=self._on_window_keyboard)
+        try:
+            Window.unbind(size=self._on_window_size_changed)
+        except Exception:
+            pass
+
+    def _on_window_size_changed(self, *_args):
+        if is_android():
+            return
+        Clock.schedule_once(lambda _dt: center_window(Window.size), 0)
 
     def _on_login_success(self, username):
         saved_size = self.account_store.get_window_size(username)

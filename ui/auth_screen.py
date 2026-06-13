@@ -20,11 +20,18 @@ from kivy.uix.scrollview import ScrollView
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.app import App
 from kivy.core.window import Window
-from kivy.graphics import Color, Rectangle, Line
+from kivy.graphics import Color, Rectangle, Line, RoundedRectangle
 from kivy.clock import Clock
 
-from auth_logic import AccountStore, MASTER_PASSWORD
-from board_widget import hex_to_rgb, CHINESE_FONT, KV_COLORS
+try:
+    from .auth_logic import AccountStore, MASTER_PASSWORD
+except ImportError:
+    from auth_logic import AccountStore, MASTER_PASSWORD
+
+try:
+    from .board_widget import hex_to_rgb, CHINESE_FONT, KV_COLORS
+except ImportError:
+    from board_widget import hex_to_rgb, CHINESE_FONT, KV_COLORS
 from platform_services.device import get_viewport_metrics, scaled
 
 
@@ -37,10 +44,69 @@ def _mk_label(text, font_size='18sp', color=(1,1,1,1), **kwargs):
     return lbl
 
 
+def _mix_color(color_a, color_b, amount):
+    amount = max(0.0, min(1.0, float(amount)))
+    return tuple(color_a[i] * (1.0 - amount) + color_b[i] * amount for i in range(4))
+
+
+def _darken(color, amount):
+    return _mix_color(color, (0.0, 0.0, 0.0, color[3]), amount)
+
+
+def _lighten(color, amount):
+    return _mix_color(color, (1.0, 1.0, 1.0, color[3]), amount)
+
+
 def _mk_button(text, font_size='14sp', **kwargs):
+    background_color = tuple(kwargs.get('background_color', (0.22, 0.48, 0.72, 1)))
+    kwargs.setdefault('background_normal', '')
+    kwargs.setdefault('background_down', '')
     btn = Button(text=text, font_size=font_size, **kwargs)
     if CHINESE_FONT:
         btn.font_name = CHINESE_FONT
+    btn.background_color = background_color
+
+    radius = 8
+    with btn.canvas.before:
+        shadow_color = Color(*_darken(background_color, 0.34))
+        shadow = RoundedRectangle(pos=(btn.x, btn.y - 2), size=(btn.width, btn.height), radius=[radius])
+        body_color = Color(*background_color)
+        body = RoundedRectangle(pos=(btn.x, btn.y), size=(btn.width, btn.height), radius=[radius])
+        highlight_color = Color(*_lighten(background_color, 0.10))
+        highlight = RoundedRectangle(
+            pos=(btn.x, btn.y + btn.height * 0.52),
+            size=(btn.width, btn.height * 0.46),
+            radius=[radius, radius, max(1, radius - 2), max(1, radius - 2)],
+        )
+        sheen_color = Color(1, 1, 1, 0.10)
+        sheen = RoundedRectangle(
+            pos=(btn.x, btn.y + btn.height * 0.66),
+            size=(btn.width, btn.height * 0.16),
+            radius=[radius, radius, 0, 0],
+        )
+        border_color = Color(0, 0, 0, 0.28)
+        border = Line(rounded_rectangle=(btn.x, btn.y, btn.width, btn.height, radius), width=1.1)
+
+    def _sync(*_args):
+        is_down = btn.state == 'down'
+        current = tuple(btn.background_color)
+        shadow.pos = (btn.x, btn.y - (1 if not is_down else 0))
+        shadow.size = (btn.width, btn.height)
+        body.pos = (btn.x, btn.y + (1 if not is_down else 0))
+        body.size = (btn.width, max(1, btn.height - (1 if not is_down else 0)))
+        highlight.pos = (btn.x, btn.y + btn.height * 0.52)
+        highlight.size = (btn.width, btn.height * 0.46)
+        sheen.pos = (btn.x, btn.y + btn.height * 0.66)
+        sheen.size = (btn.width, btn.height * 0.16)
+        shadow_color.rgba = _darken(current, 0.48 if is_down else 0.34)
+        body_color.rgba = _darken(current, 0.08 if is_down else 0.00)
+        highlight_color.rgba = _lighten(current, 0.03 if is_down else 0.10)
+        sheen_color.rgba = (1, 1, 1, 0.05 if is_down else 0.10)
+        border_color.rgba = _darken(current, 0.60 if is_down else 0.42)
+        border.rounded_rectangle = (btn.x, btn.y, btn.width, btn.height, radius)
+
+    btn.bind(pos=_sync, size=_sync, state=_sync, background_color=_sync)
+    _sync()
     return btn
 
 
@@ -140,46 +206,46 @@ class LoginScreen(Screen):
         self.on_login_success = on_login_success
 
         self.login_scroll = ScrollView(do_scroll_x=False, do_scroll_y=True, bar_width=10, scroll_type=['bars', 'content'])
-        self.outer = BoxLayout(orientation='vertical', padding=[36, 28, 36, 28], size_hint_y=None)
+        self.outer = BoxLayout(orientation='vertical', padding=[18, 14, 18, 14], size_hint_y=None)
         self.outer.add_widget(BoxLayout())
 
-        self.middle_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=430)
+        self.middle_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=392)
         self.middle_row.add_widget(BoxLayout())
 
         self.login_card = BoxLayout(
             orientation='vertical',
             size_hint=(None, None),
-            width=520,
-            height=400,
-            padding=[30, 24, 30, 24],
-            spacing=18,
+            width=470,
+            height=388,
+            padding=[24, 20, 24, 20],
+            spacing=14,
         )
         _set_block_background(
             self.login_card,
-            bg_color=(0.10, 0.17, 0.26, 0.95),
-            border_color=(0.33, 0.43, 0.55, 1.0),
+            bg_color=(0.11, 0.17, 0.25, 0.90),
+            border_color=(0.29, 0.39, 0.50, 0.62),
         )
 
-        self.header = BoxLayout(orientation='vertical', size_hint_y=None, height=120, spacing=6)
+        self.header = BoxLayout(orientation='vertical', size_hint_y=None, height=124, spacing=4)
         title = _mk_label(
-            '斗兽棋', font_size='34sp',
+            '斗兽棋', font_size='32sp',
             color=hex_to_rgb('#FFD700'),
-            size_hint_y=None, height=52,
+            size_hint_y=None, height=46,
         )
         subtitle = _mk_label(
-            'Kivy 跨平台版', font_size='15sp',
+            'Kivy 跨平台版', font_size='14sp',
             color=(0.74, 0.82, 0.92, 1),
-            size_hint_y=None, height=24,
+            size_hint_y=None, height=22,
         )
         deco = _mk_label(
-            '象 狮 虎 豹 狼 狗 猫 鼠', font_size='16sp',
+            '象 狮 虎 豹 狼 狗 猫 鼠', font_size='15sp',
             color=hex_to_rgb('#D7B96B'),
-            size_hint_y=None, height=24,
+            size_hint_y=None, height=20,
         )
         self.tip_label = _enable_label_wrap(_mk_label(
-            '', font_size='12sp',
+            '', font_size='11sp',
             color=(0.83, 0.83, 0.68, 1),
-            size_hint_y=None, height=32,
+            size_hint_y=None, height=24,
         ), halign='center')
         self.header.add_widget(title)
         self.header.add_widget(subtitle)
@@ -187,18 +253,18 @@ class LoginScreen(Screen):
         self.header.add_widget(self.tip_label)
 
         form_title = _mk_label(
-            '账号登录', font_size='20sp',
+            '账号登录', font_size='18sp',
             color=(0.95, 0.95, 0.95, 1),
-            size_hint_y=None, height=28,
+            size_hint_y=None, height=24,
         )
 
-        user_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=42, spacing=12)
+        user_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=38, spacing=10)
         user_label = _mk_label(
             '用户名', font_size='14sp',
             color=(0.72, 0.82, 0.92, 1),
-            size_hint_x=0.24,
+            size_hint_x=0.22,
         )
-        username_field = BoxLayout(orientation='horizontal', size_hint_x=0.76, spacing=6)
+        username_field = BoxLayout(orientation='horizontal', size_hint_x=0.78, spacing=6)
         self.username_input = _mk_input(hint='请输入用户名', size_hint_x=1.0)
         self.user_dropdown = DropDown(auto_width=False, width=260)
         self.user_dropdown.bind(on_select=self._on_user_selected)
@@ -215,18 +281,18 @@ class LoginScreen(Screen):
         user_row.add_widget(user_label)
         user_row.add_widget(username_field)
 
-        pass_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=42, spacing=12)
+        pass_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=38, spacing=10)
         pass_label = _mk_label(
             '密码', font_size='14sp',
             color=(0.72, 0.82, 0.92, 1),
-            size_hint_x=0.24,
+            size_hint_x=0.22,
         )
-        self.password_input = _mk_input(hint='请输入密码', password=True, size_hint_x=0.76)
+        self.password_input = _mk_input(hint='请输入密码', password=True, size_hint_x=0.78)
         self.password_input.bind(on_text_validate=self._on_login)
         pass_row.add_widget(pass_label)
         pass_row.add_widget(self.password_input)
 
-        main_btns = BoxLayout(orientation='horizontal', size_hint_y=None, height=46, spacing=12)
+        main_btns = BoxLayout(orientation='horizontal', size_hint_y=None, height=42, spacing=10)
         login_btn = _mk_button(
             '登 录', font_size='17sp',
             background_color=(0.15, 0.55, 0.85, 1),
@@ -240,7 +306,7 @@ class LoginScreen(Screen):
         main_btns.add_widget(login_btn)
         main_btns.add_widget(register_btn)
 
-        minor_btns = GridLayout(cols=3, size_hint_y=None, height=40, spacing=10)
+        minor_btns = GridLayout(cols=3, size_hint_y=None, height=36, spacing=8)
         change_pwd_btn = _mk_button(
             '修改密码', font_size='12sp',
             background_color=(0.4, 0.35, 0.25, 1),
@@ -296,22 +362,28 @@ class LoginScreen(Screen):
             return
 
         metrics = get_viewport_metrics((self.width, self.height))
-        outer_pad_x = scaled(36, metrics, min_value=14, max_value=48)
-        outer_pad_y = scaled(28, metrics, min_value=12, max_value=36)
+        is_portrait = not metrics.is_landscape
+        outer_pad_x = scaled(18 if is_portrait else 22, metrics, min_value=10, max_value=28)
+        outer_pad_y = scaled(14 if is_portrait else 18, metrics, min_value=8, max_value=22)
         self.outer.padding = [outer_pad_x, outer_pad_y, outer_pad_x, outer_pad_y]
-        self.middle_row.height = scaled(430, metrics, min_value=420, max_value=560)
+        card_target_width = 360 if is_portrait else 470
+        card_max_width = 420 if is_portrait else 560
+        self.middle_row.height = scaled(416 if is_portrait else 408, metrics, min_value=386, max_value=520)
         self.outer.height = max(self.height, self.middle_row.height + outer_pad_y * 2 + 24)
-        self.login_card.width = min(scaled(520, metrics, min_value=360, max_value=620), max(320, int(self.width - outer_pad_x * 2 - 20)))
-        self.login_card.height = scaled(400, metrics, min_value=390, max_value=500)
+        self.login_card.width = min(
+            scaled(card_target_width, metrics, min_value=320, max_value=card_max_width),
+            max(300, int(self.width - outer_pad_x * 2 - (10 if is_portrait else 16))),
+        )
+        self.login_card.height = scaled(388 if is_portrait else 384, metrics, min_value=372, max_value=476)
         self.login_card.padding = [
-            scaled(30, metrics, min_value=18, max_value=36),
-            scaled(24, metrics, min_value=16, max_value=30),
-            scaled(30, metrics, min_value=18, max_value=36),
-            scaled(24, metrics, min_value=16, max_value=30),
+            scaled(22 if is_portrait else 24, metrics, min_value=16, max_value=32),
+            scaled(18 if is_portrait else 20, metrics, min_value=14, max_value=26),
+            scaled(22 if is_portrait else 24, metrics, min_value=16, max_value=32),
+            scaled(18 if is_portrait else 20, metrics, min_value=14, max_value=26),
         ]
-        self.login_card.spacing = scaled(18, metrics, min_value=12, max_value=22)
-        self.header.height = scaled(120, metrics, min_value=104, max_value=150)
-        self.header.spacing = scaled(6, metrics, min_value=4, max_value=10)
+        self.login_card.spacing = scaled(12 if is_portrait else 14, metrics, min_value=10, max_value=18)
+        self.header.height = scaled(112 if is_portrait else 118, metrics, min_value=102, max_value=140)
+        self.header.spacing = scaled(4, metrics, min_value=3, max_value=8)
 
     def refresh_usernames(self):
         self.user_dropdown.clear_widgets()

@@ -12,7 +12,7 @@ version = 1.0.0
 
 # Runtime requirements
 requirements = kivy
-orientation = landscape
+orientation = all
 fullscreen = 0
 
 # Android resources (must match actual filenames in assets/icon/)

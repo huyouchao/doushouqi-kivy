@@ -75,4 +75,10 @@ def scaled(value, metrics: ViewportMetrics | None = None, min_value=None, max_va
 
 def use_horizontal_game_layout(size=None) -> bool:
     metrics = get_viewport_metrics(size)
-    return metrics.is_landscape and metrics.width >= 1120 and metrics.width >= metrics.height * 1.05
+    return (
+        metrics.is_landscape
+        and metrics.is_tablet_like
+        and metrics.width >= 1360
+        and metrics.height >= 820
+        and metrics.width >= metrics.height * 1.24
+    )

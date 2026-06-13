@@ -13,11 +13,18 @@ from kivy.core.text import Label as CoreLabel
 from kivy.properties import NumericProperty, ListProperty
 from kivy.clock import Clock
 
-from constants import (
-    BOARD_ROWS, BOARD_COLS, PIECE_RANK,
-    RIVER_CELLS, BLUE_DEN, RED_DEN,
-    BLUE_TRAPS, RED_TRAPS, COLORS, ANIMALS,
-)
+try:
+    from core.constants import (
+        BOARD_ROWS, BOARD_COLS, PIECE_RANK,
+        RIVER_CELLS, BLUE_DEN, RED_DEN,
+        BLUE_TRAPS, RED_TRAPS, COLORS, ANIMALS,
+    )
+except ImportError:
+    from constants import (
+        BOARD_ROWS, BOARD_COLS, PIECE_RANK,
+        RIVER_CELLS, BLUE_DEN, RED_DEN,
+        BLUE_TRAPS, RED_TRAPS, COLORS, ANIMALS,
+    )
 from platform_services.resources import get_chinese_font
 
 
