@@ -21,6 +21,7 @@ from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
+from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.scrollview import ScrollView
@@ -609,6 +610,8 @@ class GameScreen(Screen):
         self.latest_game_score = None
         self.latest_game_score_text = ''
         self._suppress_spinner_callback = False
+        self.active_mobile_tab = 'info'
+        self._using_mobile_portrait_layout = False
 
         self._build_ui()
         self._sync_pieces()
@@ -666,6 +669,34 @@ class GameScreen(Screen):
         )
         self.panel_content.bind(minimum_height=self.panel_content.setter('height'))
         self.panel_scroll.add_widget(self.panel_content)
+
+        self.mobile_panel = BoxLayout(
+            orientation='vertical',
+            spacing=8,
+            size_hint=(1, 1),
+        )
+        self.mobile_tabs_bar = GridLayout(cols=3, size_hint_y=None, height=40, spacing=8)
+        self.mobile_tab_buttons = {}
+        for tab_key, title in [('info', '对局信息'), ('settings', '对局设置'), ('actions', '常用操作')]:
+            btn = ToggleButton(
+                text=title,
+                group='mobile_panel_tab',
+                allow_no_selection=False,
+                font_size='13sp',
+                background_normal='',
+                background_down='',
+                background_color=(0.22, 0.36, 0.52, 1),
+                color=(0.92, 0.95, 0.97, 1),
+            )
+            if CHINESE_FONT:
+                btn.font_name = CHINESE_FONT
+            btn.bind(on_release=lambda instance, key=tab_key: self._switch_mobile_tab(key))
+            self.mobile_tab_buttons[tab_key] = btn
+            self.mobile_tabs_bar.add_widget(btn)
+        _style_block(self.mobile_tabs_bar, bg_color=(0.10, 0.15, 0.22, 0.98), border_color=(0.22, 0.30, 0.40, 1.0))
+        self.mobile_panel.add_widget(self.mobile_tabs_bar)
+        self.mobile_content_host = BoxLayout(orientation='vertical', size_hint=(1, 1))
+        self.mobile_panel.add_widget(self.mobile_content_host)
 
         self.turn_block = BoxLayout(orientation='vertical', size_hint_y=None, height=96, padding=[14, 12, 14, 12], spacing=6)
         _style_block(self.turn_block)
@@ -788,41 +819,45 @@ class GameScreen(Screen):
         use_horizontal = use_horizontal_game_layout((body_width, body_height))
         is_portrait = not metrics.is_landscape
         is_compact_portrait = is_portrait and metrics.breakpoint == 'compact'
+        use_mobile_portrait = is_portrait and not metrics.is_tablet_like
 
         outer_gap = scaled(10, metrics, min_value=6, max_value=18)
         self.root_layout.padding = outer_gap
         self.root_layout.spacing = outer_gap
         self.body.spacing = outer_gap
         self.side_panel.spacing = block_spacing = scaled(5, metrics, min_value=3, max_value=8)
-        self.top_bar.height = scaled(TOP_BAR_HEIGHT, metrics, min_value=44, max_value=64)
+        self.mobile_panel.spacing = block_spacing
+        self.top_bar.height = scaled(TOP_BAR_HEIGHT + (8 if use_mobile_portrait else 0), metrics, min_value=48, max_value=72)
         self.top_bar.spacing = scaled(10, metrics, min_value=8, max_value=16)
         self.board_shell.padding = scaled(8 if use_horizontal else 10, metrics, min_value=6, max_value=16)
-        self.top_user_label.size_hint_x = 0.50 if use_horizontal else 0.44
-        self.menu_btn.size_hint_x = 0.22 if use_horizontal else 0.24
+        self.top_user_label.size_hint_x = 0.50 if use_horizontal else (0.48 if use_mobile_portrait else 0.44)
+        self.menu_btn.size_hint_x = 0.22 if use_horizontal else (0.22 if use_mobile_portrait else 0.24)
 
         block_padding_x = scaled(12, metrics, min_value=8, max_value=18)
         block_padding_y = scaled(10, metrics, min_value=6, max_value=14)
-        self.turn_block.height = scaled(90 if is_portrait else 96, metrics, min_value=82, max_value=136)
+        self.turn_block.height = scaled(82 if use_mobile_portrait else (90 if is_portrait else 96), metrics, min_value=76, max_value=136)
         self.turn_block.padding = [block_padding_x, block_padding_y, block_padding_x, block_padding_y]
         self.turn_block.spacing = block_spacing
-        self.info_block.height = scaled(258 if is_portrait else 248, metrics, min_value=238, max_value=340)
+        self.info_block.height = scaled(236 if use_mobile_portrait else (258 if is_portrait else 248), metrics, min_value=208, max_value=340)
         self.info_block.padding = [block_padding_x, block_padding_x, block_padding_x, block_padding_x]
         self.info_block.spacing = scaled(8, metrics, min_value=4, max_value=12)
         self.info_list.spacing = block_spacing
         self.info_list.height = self.info_block.height - scaled(56, metrics, min_value=48, max_value=72)
-        self.settings_block.height = scaled(132 if is_portrait else 134, metrics, min_value=122, max_value=172)
+        self.settings_block.height = scaled(136 if use_mobile_portrait else (132 if is_portrait else 134), metrics, min_value=122, max_value=184)
         self.settings_block.padding = [block_padding_x, block_padding_x, block_padding_x, block_padding_x]
         self.settings_block.spacing = scaled(8, metrics, min_value=4, max_value=12)
-        self.actions_block.height = scaled(108 if is_portrait else 110, metrics, min_value=98, max_value=132)
+        self.actions_block.height = scaled(122 if use_mobile_portrait else (108 if is_portrait else 110), metrics, min_value=98, max_value=152)
         self.actions_block.padding = [block_padding_x, block_padding_y, block_padding_x, block_padding_y]
         self.actions_block.spacing = block_spacing
-        self.action_box.height = scaled(64, metrics, min_value=58, max_value=82)
-        self.action_row_top.height = scaled(28, metrics, min_value=26, max_value=36)
-        self.action_row_bottom.height = scaled(28, metrics, min_value=26, max_value=36)
+        self.action_box.height = scaled(76 if use_mobile_portrait else 64, metrics, min_value=58, max_value=92)
+        self.action_row_top.height = scaled(34 if use_mobile_portrait else 28, metrics, min_value=26, max_value=42)
+        self.action_row_bottom.height = scaled(34 if use_mobile_portrait else 28, metrics, min_value=26, max_value=42)
         row_gap = scaled(5, metrics, min_value=3, max_value=8)
         self.action_box.spacing = row_gap
         self.action_row_top.spacing = [row_gap, row_gap]
         self.action_row_bottom.spacing = row_gap
+        self.mobile_tabs_bar.height = scaled(40, metrics, min_value=36, max_value=52)
+        self.mobile_tabs_bar.spacing = row_gap
         label_ratio = 0.16 if use_horizontal else 0.15
         spinner_ratio = 1.0 - label_ratio
         self.mode_label.size_hint_x = label_ratio
@@ -830,6 +865,7 @@ class GameScreen(Screen):
         self.mode_spinner.size_hint_x = spinner_ratio
         self.difficulty_spinner.size_hint_x = spinner_ratio
 
+        self._apply_panel_layout_mode(use_mobile_portrait)
         if use_horizontal:
             self.body.orientation = 'horizontal'
             self.board_shell.size_hint = (0.78, 1)
@@ -841,7 +877,12 @@ class GameScreen(Screen):
             self.body.orientation = 'vertical'
             self.side_panel.size_hint = (1, 1)
             self.actions_block.size_hint_y = None
-            if is_compact_portrait:
+            if use_mobile_portrait:
+                self.board_shell.size_hint = (1, 0.74)
+                self.side_panel.size_hint = (1, 0.26)
+                self.panel_scroll.size_hint = (1, 1)
+                self.panel_scroll.height = max(110, body_height * 0.26 - self.actions_block.height - self.side_panel.spacing)
+            elif is_compact_portrait:
                 self.board_shell.size_hint = (1, 0.66)
                 self.side_panel.size_hint = (1, 0.34)
                 self.panel_scroll.size_hint = (1, 1)
@@ -870,11 +911,70 @@ class GameScreen(Screen):
         elif metrics.is_landscape:
             max_cell = 88
         else:
-            max_cell = 82 if metrics.breakpoint == 'compact' else 86
+            if not metrics.is_tablet_like:
+                max_cell = 112 if metrics.breakpoint == 'compact' else 120
+            else:
+                max_cell = 82 if metrics.breakpoint == 'compact' else 86
         min_cell = 34 if metrics.breakpoint == 'compact' else 38
         new_size = max(min_cell, min(max_cell, int(min(cell_by_w, cell_by_h))))
         self.board.cell_size = new_size
         self.board.board_margin = max(12, int(new_size * 0.22))
+
+    def _apply_panel_layout_mode(self, use_mobile_portrait):
+        if self._using_mobile_portrait_layout == use_mobile_portrait:
+            return
+        self._using_mobile_portrait_layout = use_mobile_portrait
+
+        for parent, child in [
+            (self.panel_content, self.turn_block),
+            (self.panel_content, self.info_block),
+            (self.panel_content, self.settings_block),
+            (self.side_panel, self.panel_scroll),
+            (self.side_panel, self.actions_block),
+            (self.mobile_content_host, self.turn_block),
+            (self.mobile_content_host, self.info_block),
+            (self.mobile_content_host, self.settings_block),
+            (self.mobile_content_host, self.actions_block),
+            (self.side_panel, self.mobile_panel),
+        ]:
+            if child.parent is parent:
+                parent.remove_widget(child)
+
+        if use_mobile_portrait:
+            self.side_panel.add_widget(self.mobile_panel)
+            self._switch_mobile_tab(self.active_mobile_tab)
+        else:
+            self.panel_content.add_widget(self.turn_block)
+            self.panel_content.add_widget(self.info_block)
+            self.panel_content.add_widget(self.settings_block)
+            self.side_panel.add_widget(self.panel_scroll)
+            self.side_panel.add_widget(self.actions_block)
+
+    def _switch_mobile_tab(self, tab_key):
+        self.active_mobile_tab = tab_key
+        active_bg = (0.24, 0.50, 0.76, 1)
+        inactive_bg = (0.16, 0.25, 0.35, 1)
+        for key, btn in self.mobile_tab_buttons.items():
+            is_active = key == tab_key
+            btn.state = 'down' if is_active else 'normal'
+            btn.background_color = active_bg if is_active else inactive_bg
+
+        if not hasattr(self, 'mobile_content_host') or not self._using_mobile_portrait_layout:
+            return
+
+        for child in list(self.mobile_content_host.children):
+            self.mobile_content_host.remove_widget(child)
+
+        content_map = {
+            'info': [self.turn_block, self.info_block],
+            'settings': [self.settings_block],
+            'actions': [self.actions_block],
+        }
+        for widget in content_map.get(tab_key, [self.turn_block, self.info_block]):
+            if widget.parent is not None and widget.parent is not self.mobile_content_host:
+                widget.parent.remove_widget(widget)
+            if widget.parent is not self.mobile_content_host:
+                self.mobile_content_host.add_widget(widget)
 
     def _open_menu(self, *_args):
         dropdown = DropDown(auto_width=False, width=240)
