@@ -1,6 +1,6 @@
 [app]
 
-# Application metadata
+# Application metadata (NOTE: no Chinese, no BOM allowed!)
 title = Jungle Chess
 package.name = doushouqi
 package.domain = org.doushouqi
@@ -15,11 +15,11 @@ requirements = kivy
 orientation = landscape
 fullscreen = 0
 
-# Android resources
+# Android resources (must match actual filenames in assets/icon/)
 icon.filename = %(source.dir)s/assets/icon/icon_512.png
-splash.filename = %(source.dir)s/assets/icon/splash.png
+splash.filename = %(source.dir)s/assets/icon/presplash.png
 
-# Android compatibility
+# Android compatibility settings
 android.minapi = 26
 android.api = 33
 android.build_tools_version = 33.0.2

@@ -23,21 +23,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # Kivy 官方 Action，内部用预配置好的 Docker 镜像运行 buildozer
-      # 镜像已包含 Android SDK / NDK / Java / Gradle，无需手动安装
-      - name: Build APK (official kivy/buildozer-action)
-        uses: kivy/buildozer-action@master
+      # 使用社区维护的 buildozer action（kivy官方action不存在）
+      # 参考: https://github.com/digreatbrian/buildozer-action
+      - name: Build APK with Buildozer
+        uses: digreatbrian/buildozer-action@v2
         with:
-          command: buildozer -v android debug
-          repository_root: .
+          python-version: '3.10'
+          buildozer-cmd: buildozer -v android debug
 
-      # 上传产物（APK 文件）
+      # 上传产物
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: doushouqi-debug-apk
           path: bin/*.apk
           if-no-files-found: warn
+
+      # 构建失败时也上传日志以便排查
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            .buildozer/
+            *.log
+          if-no-files-found: ignore
