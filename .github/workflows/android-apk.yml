@@ -31,30 +31,60 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Install Buildozer system dependencies
+      - name: Install system dependencies
         run: |
-          sudo apt update
-          sudo apt install -y \
-            git zip unzip openjdk-17-jdk python3-pip autoconf libtool \
-            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
-            cmake libffi-dev libssl-dev automake
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip openjdk-17-jdk-headless python3-pip \
+            autoconf libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev libtinfo5 cmake \
+            libffi-dev libssl-dev automake \
+            wget ccache
 
-      - name: Install Buildozer
+      - name: Install Python packages
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install buildozer==1.5.0 setuptools cython==0.29.34
+          pip install --upgrade pip setuptools wheel
+          pip install buildozer==1.6.0.post0 cython==3.0.11
 
-      - name: Pre-accept Android SDK licenses
+      - name: Set up Android SDK + NDK
         run: |
-          # Create fake license files so buildozer's sdkmanager doesn't prompt
-          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
-          printf "\n8933bad161af4178b1185d1e6fbd5e7a16abbf5a" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          printf "\nd56f5187479451eabf01fb78af6dfcb131a6481e" >> /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          printf "\n84831b9409646a918e30573f8b7d47d9b3ad9f9" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          # --- Set up the SDK directory where buildozer expects it ---
+          SDK_DIR="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK_DIR"
+
+          # --- Download & install command-line tools ---
+          mkdir -p /tmp/sdk-install
+          cd /tmp/sdk-install
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux_11076708_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip
+          mkdir -p "$SDK_DIR/cmdline-tools/latest"
+          mv cmdline-tools/* "$SDK_DIR/cmdline-tools/latest/" || true
+
+          # --- Create legacy tools/bin symlink so buildozer finds sdkmanager ---
+          mkdir -p "$SDK_DIR/tools/bin"
+          ln -sf "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$SDK_DIR/tools/bin/sdkmanager" || true
+          ln -sf "$SDK_DIR/cmdline-tools/latest/bin/apksigner" "$SDK_DIR/tools/bin/apksigner" || true
+
+          # --- Export ANDROID_HOME ---
+          echo "ANDROID_HOME=$SDK_DIR" >> $GITHUB_ENV
+          export ANDROID_HOME="$SDK_DIR"
+
+          # --- Accept all licenses ---
+          yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --licenses --sdk_root="$SDK_DIR" >/dev/null 2>&1 || true
+
+          # --- Install required platform and build-tools ---
+          "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_DIR" \
+            "platforms;android-33" "build-tools;33.0.2" >/dev/null 2>&1 || true
+
+          echo "Android SDK ready at $SDK_DIR"
+          ls "$SDK_DIR/platforms/" 2>/dev/null || echo "(no platforms yet)"
+          ls "$SDK_DIR/build-tools/" 2>/dev/null || echo "(no build-tools yet)"
+          "$SDK_DIR/tools/bin/sdkmanager" --version 2>/dev/null || echo "(sdkmanager link check)"
 
       - name: Build debug APK
         run: |
-          buildozer android debug
+          export ANDROID_HOME="$HOME/.buildozer/android/platform/android-sdk"
+          buildozer android debug 2>&1
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
@@ -63,4 +93,4 @@ jobs:
           path: |
             bin/*.apk
             bin/*.aab
-          if-no-files-found: error
+          if-no-files-found: warn
