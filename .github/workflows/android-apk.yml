@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   build-apk:
-    runs-on: ubuntu-22.04  # Ubuntu 22.04 有完整的 Android 构建支持
+    runs-on: ubuntu-22.04
 
     steps:
       # ===== 1. 拉取代码 =====
@@ -57,37 +57,46 @@ jobs:
           pip install --upgrade pip setuptools wheel
           pip install "Cython>=0.29,<0.30" buildozer
 
-      # ===== 6. 预接受 Android SDK 许可证 (关键步骤!) =====
-      - name: Accept Android SDK licenses
+      # ===== 6. 预接受 Android SDK 许可证 =====
+      # 写入已知许可证 + 设置环境变量让sdkmanager自动接受其余的
+      - name: Pre-accept Android SDK licenses
         run: |
           mkdir -p "$HOME/android-sdk/licenses"
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$HOME/android-sdk/licenses/android-sdk-license"
           echo "84831b9409646a918e30573bab4c9c91346d8abd" >> "$HOME/android-sdk/licenses/android-sdk-license"
           echo "d975f751698a77b662f1254ddbeed3901e976f5a" > "$HOME/android-sdk/licenses/android-sdk-preview-license"
+          echo "9e7b9d5c6c0a201d06e05e0c288e3c4cf1c91221" >> "$HOME/android-sdk/licenses/android-sdk-license"
 
-      # ===== 7. 执行 Buildozer 构建 =====
+      # ===== 7. 执行 Buildozer 构建 (用 yes 自动接受额外许可) =====
       - name: Build APK with Buildozer
         env:
-          ANDROID_SDK_ROOT: ${{ env.HOME }}/android-sdk
+          ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
+          HOME: ${{ github.workspace }}
         run: |
-          buildozer -v android debug 2>&1 | tee buildozer_output.log
+          yes | buildozer -v android debug 2>&1 | tee buildozer_output.log || true
+          echo "=== BUILD EXIT CODE: $? ==="
 
-      # ===== 8. 上传 APK 产物 =====
+      # ===== 8. 检查APK是否生成 (防止假成功) =====
+      - name: Verify APK was produced
+        run: |
+          echo "Checking for APK files..."
+          ls -la bin/*.apk 2>/dev/null && echo "✅ APK found!" || { echo "❌ No APK found!"; find . -name "*.apk" 2>/dev/null; exit 1; }
+
+      # ===== 9. 上传 APK 产物 =====
       - name: Upload APK Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: doushouqi-debug-apk
           path: bin/*.apk
-          if-no-files-found: warn
           retention-days: 30
 
-      # ===== 9. 失败时上传完整日志 =====
-      - name: Upload full build logs on failure
-        if: failure()
+      # ===== 10. 上传完整日志 (无论成功失败) =====
+      - name: Upload build logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-failure-logs
+          name: build-logs
           path: |
             .buildozer/
             buildozer_output.log
