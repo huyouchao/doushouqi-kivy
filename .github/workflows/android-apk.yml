@@ -42,7 +42,15 @@ jobs:
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
-          python -m pip install buildozer setuptools cython==0.29.34
+          python -m pip install buildozer==1.5.0 setuptools cython==0.29.34
+
+      - name: Pre-accept Android SDK licenses
+        run: |
+          # Create fake license files so buildozer's sdkmanager doesn't prompt
+          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
+          printf "\n8933bad161af4178b1185d1e6fbd5e7a16abbf5a" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          printf "\nd56f5187479451eabf01fb78af6dfcb131a6481e" >> /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          printf "\n84831b9409646a918e30573f8b7d47d9b3ad9f9" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
 
       - name: Build debug APK
         run: |

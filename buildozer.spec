@@ -21,6 +21,8 @@ splash.filename = %(source.dir)s/assets/icon/splash.png
 
 # Android compatibility
 android.minapi = 26
+android.api = 33
+android.build_tools_version = 33.0.2
 android.archs = arm64-v8a,armeabi-v7a
 android.permissions =
 
