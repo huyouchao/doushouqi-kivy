@@ -55,7 +55,7 @@ jobs:
       - name: Install build tools
         run: |
           pip install --upgrade pip setuptools wheel
-          pip install Cython==0.29.40 buildozer==1.6.0
+          pip install "Cython>=0.29,<0.30" buildozer
 
       # ===== 6. 预接受 Android SDK 许可证 (关键步骤!) =====
       - name: Accept Android SDK licenses
