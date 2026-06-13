@@ -1,40 +1,28 @@
-[app]
+﻿[app]
 
 # Application metadata
-title = 斗兽棋
+title = Jungle Chess
 package.name = doushouqi
-package.domain = com.huyouchao
+package.domain = org.doushouqi
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,kv,atlas,json,ttc,otf,txt,md,ico
-source.exclude_dirs = .git,.venv,.vscode,__pycache__,bin,build,dist,cache,saves
+source.exclude_dirs = .git,.venv,.vscode,__pycache__,bin,build,dist,.buildozer,cache,saves
 source.exclude_patterns = *.pyc,*.pyo,*.log
 version = 1.0.0
 
 # Runtime requirements
-requirements = python3,kivy
-orientation = all
+requirements = kivy
+orientation = landscape
 fullscreen = 0
 
 # Android resources
-icon.filename = assets/icon/icon_512.png
-presplash.filename = assets/icon/presplash.png
+icon.filename = %(source.dir)s/assets/icon/icon_512.png
+splash.filename = %(source.dir)s/assets/icon/splash.png
 
 # Android compatibility
 android.minapi = 26
-android.archs = arm64-v8a, armeabi-v7a
-
-# The following values depend on the final cloud build environment.
-# If the selected build image already provides compatible defaults,
-# you can leave them commented out. Otherwise set them explicitly.
-# android.api = 34
-# android.ndk = 25b
-# p4a.branch = master
-
-# No special permissions are currently required.
-# android.permissions =
-
-# Keep only application sources and bundled resources in the APK.
-android.add_assets =
+android.archs = arm64-v8a,armeabi-v7a
+android.permissions =
 
 [buildozer]
 log_level = 2
