@@ -1,4 +1,4 @@
-﻿[app]
+[app]
 
 # Application metadata
 title = Jungle Chess
