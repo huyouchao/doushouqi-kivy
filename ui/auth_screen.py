@@ -227,17 +227,17 @@ class LoginScreen(Screen):
         )
 
         self.header = BoxLayout(orientation='vertical', size_hint_y=None, height=124, spacing=4)
-        title = _mk_label(
+        self.title_label = _mk_label(
             '斗兽棋', font_size='32sp',
             color=hex_to_rgb('#FFD700'),
             size_hint_y=None, height=46,
         )
-        subtitle = _mk_label(
+        self.subtitle_label = _mk_label(
             'Kivy 跨平台版', font_size='14sp',
             color=(0.74, 0.82, 0.92, 1),
             size_hint_y=None, height=22,
         )
-        deco = _mk_label(
+        self.deco_label = _mk_label(
             '象 狮 虎 豹 狼 狗 猫 鼠', font_size='15sp',
             color=hex_to_rgb('#D7B96B'),
             size_hint_y=None, height=20,
@@ -247,24 +247,24 @@ class LoginScreen(Screen):
             color=(0.83, 0.83, 0.68, 1),
             size_hint_y=None, height=24,
         ), halign='center')
-        self.header.add_widget(title)
-        self.header.add_widget(subtitle)
-        self.header.add_widget(deco)
+        self.header.add_widget(self.title_label)
+        self.header.add_widget(self.subtitle_label)
+        self.header.add_widget(self.deco_label)
         self.header.add_widget(self.tip_label)
 
-        form_title = _mk_label(
+        self.form_title = _mk_label(
             '账号登录', font_size='18sp',
             color=(0.95, 0.95, 0.95, 1),
             size_hint_y=None, height=24,
         )
 
-        user_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=38, spacing=10)
-        user_label = _mk_label(
+        self.user_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=38, spacing=10)
+        self.user_label = _mk_label(
             '用户名', font_size='14sp',
             color=(0.72, 0.82, 0.92, 1),
             size_hint_x=0.22,
         )
-        username_field = BoxLayout(orientation='horizontal', size_hint_x=0.78, spacing=6)
+        self.username_field = BoxLayout(orientation='horizontal', size_hint_x=0.78, spacing=6)
         self.username_input = _mk_input(hint='请输入用户名', size_hint_x=1.0)
         self.user_dropdown = DropDown(auto_width=False, width=260)
         self.user_dropdown.bind(on_select=self._on_user_selected)
@@ -276,62 +276,62 @@ class LoginScreen(Screen):
             background_color=(0.22, 0.34, 0.46, 1),
         )
         self.user_menu_btn.bind(on_press=self._open_user_dropdown)
-        username_field.add_widget(self.username_input)
-        username_field.add_widget(self.user_menu_btn)
-        user_row.add_widget(user_label)
-        user_row.add_widget(username_field)
+        self.username_field.add_widget(self.username_input)
+        self.username_field.add_widget(self.user_menu_btn)
+        self.user_row.add_widget(self.user_label)
+        self.user_row.add_widget(self.username_field)
 
-        pass_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=38, spacing=10)
-        pass_label = _mk_label(
+        self.pass_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=38, spacing=10)
+        self.pass_label = _mk_label(
             '密码', font_size='14sp',
             color=(0.72, 0.82, 0.92, 1),
             size_hint_x=0.22,
         )
         self.password_input = _mk_input(hint='请输入密码', password=True, size_hint_x=0.78)
         self.password_input.bind(on_text_validate=self._on_login)
-        pass_row.add_widget(pass_label)
-        pass_row.add_widget(self.password_input)
+        self.pass_row.add_widget(self.pass_label)
+        self.pass_row.add_widget(self.password_input)
 
-        main_btns = BoxLayout(orientation='horizontal', size_hint_y=None, height=42, spacing=10)
-        login_btn = _mk_button(
+        self.main_btns = BoxLayout(orientation='horizontal', size_hint_y=None, height=42, spacing=10)
+        self.login_btn = _mk_button(
             '登 录', font_size='17sp',
             background_color=(0.15, 0.55, 0.85, 1),
         )
-        login_btn.bind(on_press=self._on_login)
-        register_btn = _mk_button(
+        self.login_btn.bind(on_press=self._on_login)
+        self.register_btn = _mk_button(
             '注册新账号', font_size='14sp',
             background_color=(0.2, 0.5, 0.3, 1),
         )
-        register_btn.bind(on_press=self._on_goto_register)
-        main_btns.add_widget(login_btn)
-        main_btns.add_widget(register_btn)
+        self.register_btn.bind(on_press=self._on_goto_register)
+        self.main_btns.add_widget(self.login_btn)
+        self.main_btns.add_widget(self.register_btn)
 
-        minor_btns = GridLayout(cols=3, size_hint_y=None, height=36, spacing=8)
-        change_pwd_btn = _mk_button(
+        self.minor_btns = GridLayout(cols=3, size_hint_y=None, height=36, spacing=8)
+        self.change_pwd_btn = _mk_button(
             '修改密码', font_size='12sp',
             background_color=(0.4, 0.35, 0.25, 1),
         )
-        change_pwd_btn.bind(on_press=self._on_goto_change_pwd)
-        reset_pwd_btn = _mk_button(
+        self.change_pwd_btn.bind(on_press=self._on_goto_change_pwd)
+        self.reset_pwd_btn = _mk_button(
             '找回密码', font_size='12sp',
             background_color=(0.4, 0.35, 0.25, 1),
         )
-        reset_pwd_btn.bind(on_press=self._on_goto_reset_pwd)
-        quit_btn = _mk_button(
+        self.reset_pwd_btn.bind(on_press=self._on_goto_reset_pwd)
+        self.quit_btn = _mk_button(
             '退出', font_size='12sp',
             background_color=(0.5, 0.2, 0.2, 1),
         )
-        quit_btn.bind(on_press=self._on_quit)
-        minor_btns.add_widget(change_pwd_btn)
-        minor_btns.add_widget(reset_pwd_btn)
-        minor_btns.add_widget(quit_btn)
+        self.quit_btn.bind(on_press=self._on_quit)
+        self.minor_btns.add_widget(self.change_pwd_btn)
+        self.minor_btns.add_widget(self.reset_pwd_btn)
+        self.minor_btns.add_widget(self.quit_btn)
 
         self.login_card.add_widget(self.header)
-        self.login_card.add_widget(form_title)
-        self.login_card.add_widget(user_row)
-        self.login_card.add_widget(pass_row)
-        self.login_card.add_widget(main_btns)
-        self.login_card.add_widget(minor_btns)
+        self.login_card.add_widget(self.form_title)
+        self.login_card.add_widget(self.user_row)
+        self.login_card.add_widget(self.pass_row)
+        self.login_card.add_widget(self.main_btns)
+        self.login_card.add_widget(self.minor_btns)
 
         self.middle_row.add_widget(self.login_card)
         self.middle_row.add_widget(BoxLayout())
@@ -363,27 +363,56 @@ class LoginScreen(Screen):
 
         metrics = get_viewport_metrics((self.width, self.height))
         is_portrait = not metrics.is_landscape
+        use_mobile_portrait = is_portrait and not metrics.is_tablet_like
         outer_pad_x = scaled(18 if is_portrait else 22, metrics, min_value=10, max_value=28)
         outer_pad_y = scaled(14 if is_portrait else 18, metrics, min_value=8, max_value=22)
         self.outer.padding = [outer_pad_x, outer_pad_y, outer_pad_x, outer_pad_y]
-        card_target_width = 360 if is_portrait else 470
-        card_max_width = 420 if is_portrait else 560
-        self.middle_row.height = scaled(416 if is_portrait else 408, metrics, min_value=386, max_value=520)
+        card_target_width = 390 if use_mobile_portrait else (360 if is_portrait else 470)
+        card_max_width = 430 if use_mobile_portrait else (420 if is_portrait else 560)
+        self.middle_row.height = scaled(520 if use_mobile_portrait else (416 if is_portrait else 408), metrics, min_value=386, max_value=760)
         self.outer.height = max(self.height, self.middle_row.height + outer_pad_y * 2 + 24)
         self.login_card.width = min(
             scaled(card_target_width, metrics, min_value=320, max_value=card_max_width),
-            max(300, int(self.width - outer_pad_x * 2 - (10 if is_portrait else 16))),
+            max(300, int(self.width - outer_pad_x * 2 - (6 if use_mobile_portrait else (10 if is_portrait else 16)))),
         )
-        self.login_card.height = scaled(388 if is_portrait else 384, metrics, min_value=372, max_value=476)
+        self.login_card.height = scaled(498 if use_mobile_portrait else (388 if is_portrait else 384), metrics, min_value=372, max_value=720)
         self.login_card.padding = [
-            scaled(22 if is_portrait else 24, metrics, min_value=16, max_value=32),
-            scaled(18 if is_portrait else 20, metrics, min_value=14, max_value=26),
-            scaled(22 if is_portrait else 24, metrics, min_value=16, max_value=32),
-            scaled(18 if is_portrait else 20, metrics, min_value=14, max_value=26),
+            scaled(18 if use_mobile_portrait else (22 if is_portrait else 24), metrics, min_value=16, max_value=32),
+            scaled(20 if use_mobile_portrait else (18 if is_portrait else 20), metrics, min_value=14, max_value=28),
+            scaled(18 if use_mobile_portrait else (22 if is_portrait else 24), metrics, min_value=16, max_value=32),
+            scaled(20 if use_mobile_portrait else (18 if is_portrait else 20), metrics, min_value=14, max_value=28),
         ]
-        self.login_card.spacing = scaled(12 if is_portrait else 14, metrics, min_value=10, max_value=18)
-        self.header.height = scaled(112 if is_portrait else 118, metrics, min_value=102, max_value=140)
+        self.login_card.spacing = scaled(16 if use_mobile_portrait else (12 if is_portrait else 14), metrics, min_value=10, max_value=22)
+        self.header.height = scaled(132 if use_mobile_portrait else (112 if is_portrait else 118), metrics, min_value=102, max_value=164)
         self.header.spacing = scaled(4, metrics, min_value=3, max_value=8)
+        self.form_title.height = scaled(28 if use_mobile_portrait else 24, metrics, min_value=24, max_value=36)
+
+        row_height = scaled(52 if use_mobile_portrait else 38, metrics, min_value=38, max_value=64)
+        btn_height = scaled(54 if use_mobile_portrait else 42, metrics, min_value=42, max_value=68)
+        minor_height = scaled(46 if use_mobile_portrait else 36, metrics, min_value=36, max_value=56)
+        row_spacing = scaled(12 if use_mobile_portrait else 10, metrics, min_value=8, max_value=16)
+        minor_spacing = scaled(10 if use_mobile_portrait else 8, metrics, min_value=6, max_value=14)
+
+        self.user_row.height = row_height
+        self.pass_row.height = row_height
+        self.user_row.spacing = row_spacing
+        self.pass_row.spacing = row_spacing
+        label_ratio = 0.26 if use_mobile_portrait else 0.22
+        input_ratio = 1.0 - label_ratio
+        self.user_label.size_hint_x = label_ratio
+        self.pass_label.size_hint_x = label_ratio
+        self.username_field.size_hint_x = input_ratio
+        self.password_input.size_hint_x = input_ratio
+        self.username_field.spacing = scaled(8 if use_mobile_portrait else 6, metrics, min_value=6, max_value=12)
+        self.username_input.height = row_height
+        self.password_input.height = row_height
+        self.user_menu_btn.width = scaled(52 if use_mobile_portrait else 44, metrics, min_value=44, max_value=60)
+        self.user_menu_btn.height = row_height
+
+        self.main_btns.height = btn_height
+        self.main_btns.spacing = row_spacing
+        self.minor_btns.height = minor_height
+        self.minor_btns.spacing = minor_spacing
 
     def refresh_usernames(self):
         self.user_dropdown.clear_widgets()
