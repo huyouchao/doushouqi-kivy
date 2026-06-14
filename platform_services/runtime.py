@@ -96,6 +96,6 @@ def configure_soft_input_mode() -> None:
 
     if is_android():
         try:
-            Window.softinput_mode = "pan"
+            Window.softinput_mode = "below_target"
         except Exception:
             pass
