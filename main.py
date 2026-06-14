@@ -807,8 +807,8 @@ class GameScreen(Screen):
         self.board_shell.bind(size=lambda *_: self._update_board_scale())
 
     def _make_info_line(self, prefix, color=(1, 1, 1, 1), height=26):
-        label = _enable_wrap(_mk_label(prefix, font_size='11sp', color=color, size_hint_y=None, height=height), halign='left')
-        label.padding = (6, 0)
+        label = _enable_wrap(_mk_label(prefix, font_size='12sp', color=color, size_hint_y=None, height=height), halign='left')
+        label.padding = (8, 2)
         _style_block(label, bg_color=(0.10, 0.15, 0.22, 1.0), border_color=(0.22, 0.30, 0.40, 1))
         return label
 
@@ -829,7 +829,7 @@ class GameScreen(Screen):
         self.mobile_panel.spacing = block_spacing
         self.top_bar.height = scaled(TOP_BAR_HEIGHT + (8 if use_mobile_portrait else 0), metrics, min_value=48, max_value=72)
         self.top_bar.spacing = scaled(10, metrics, min_value=8, max_value=16)
-        self.board_shell.padding = scaled(8 if use_horizontal else 10, metrics, min_value=6, max_value=16)
+        self.board_shell.padding = scaled(6 if use_mobile_portrait else (8 if use_horizontal else 10), metrics, min_value=4, max_value=16)
         self.top_user_label.size_hint_x = 0.50 if use_horizontal else (0.48 if use_mobile_portrait else 0.44)
         self.menu_btn.size_hint_x = 0.22 if use_horizontal else (0.22 if use_mobile_portrait else 0.24)
 
@@ -838,11 +838,11 @@ class GameScreen(Screen):
         self.turn_block.height = scaled(82 if use_mobile_portrait else (90 if is_portrait else 96), metrics, min_value=76, max_value=136)
         self.turn_block.padding = [block_padding_x, block_padding_y, block_padding_x, block_padding_y]
         self.turn_block.spacing = block_spacing
-        self.info_block.height = scaled(236 if use_mobile_portrait else (258 if is_portrait else 248), metrics, min_value=208, max_value=340)
-        self.info_block.padding = [block_padding_x, block_padding_x, block_padding_x, block_padding_x]
-        self.info_block.spacing = scaled(8, metrics, min_value=4, max_value=12)
-        self.info_list.spacing = block_spacing
-        self.info_list.height = self.info_block.height - scaled(56, metrics, min_value=48, max_value=72)
+        self.info_block.height = scaled(274 if use_mobile_portrait else (258 if is_portrait else 248), metrics, min_value=236, max_value=372)
+        self.info_block.padding = [block_padding_x, scaled(14 if use_mobile_portrait else 12, metrics, min_value=10, max_value=20), block_padding_x, scaled(14 if use_mobile_portrait else 12, metrics, min_value=10, max_value=20)]
+        self.info_block.spacing = scaled(10 if use_mobile_portrait else 8, metrics, min_value=6, max_value=14)
+        self.info_list.spacing = scaled(8 if use_mobile_portrait else 6, metrics, min_value=4, max_value=12)
+        self.info_list.height = self.info_block.height - scaled(60 if use_mobile_portrait else 56, metrics, min_value=52, max_value=80)
         self.settings_block.height = scaled(136 if use_mobile_portrait else (132 if is_portrait else 134), metrics, min_value=122, max_value=184)
         self.settings_block.padding = [block_padding_x, block_padding_x, block_padding_x, block_padding_x]
         self.settings_block.spacing = scaled(8, metrics, min_value=4, max_value=12)
@@ -878,10 +878,10 @@ class GameScreen(Screen):
             self.side_panel.size_hint = (1, 1)
             self.actions_block.size_hint_y = None
             if use_mobile_portrait:
-                self.board_shell.size_hint = (1, 0.74)
-                self.side_panel.size_hint = (1, 0.26)
+                self.board_shell.size_hint = (1, 0.78)
+                self.side_panel.size_hint = (1, 0.22)
                 self.panel_scroll.size_hint = (1, 1)
-                self.panel_scroll.height = max(110, body_height * 0.26 - self.actions_block.height - self.side_panel.spacing)
+                self.panel_scroll.height = max(126, body_height * 0.22 - self.actions_block.height - self.side_panel.spacing)
             elif is_compact_portrait:
                 self.board_shell.size_hint = (1, 0.66)
                 self.side_panel.size_hint = (1, 0.34)
@@ -912,13 +912,13 @@ class GameScreen(Screen):
             max_cell = 88
         else:
             if not metrics.is_tablet_like:
-                max_cell = 112 if metrics.breakpoint == 'compact' else 120
+                max_cell = 128 if metrics.breakpoint == 'compact' else 136
             else:
                 max_cell = 82 if metrics.breakpoint == 'compact' else 86
         min_cell = 34 if metrics.breakpoint == 'compact' else 38
         new_size = max(min_cell, min(max_cell, int(min(cell_by_w, cell_by_h))))
         self.board.cell_size = new_size
-        self.board.board_margin = max(12, int(new_size * 0.22))
+        self.board.board_margin = max(8, int(new_size * (0.12 if (not metrics.is_landscape and not metrics.is_tablet_like) else 0.22)))
 
     def _apply_panel_layout_mode(self, use_mobile_portrait):
         if self._using_mobile_portrait_layout == use_mobile_portrait:
